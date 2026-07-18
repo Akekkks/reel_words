@@ -411,10 +411,45 @@ function openAuthModal(){
       .then(()=>{ showToast("Signed in."); closeAuthModal(); })
       .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; });
   });
-  document.getElementById("authSignUp").addEventListener("click", ()=>{
-    const email = document.getElementById("authEmail").value.trim();
-    const pw = document.getElementById("authPassword").value;
+ document.getElementById("authSignUp").addEventListener("click", ()=>{
+
+    const emailInput = document.getElementById("authEmail");
+    const passwordInput = document.getElementById("authPassword");
+
+    const email = emailInput.value.trim();
+    const pw = passwordInput.value.trim();
+
+
+    console.log("EMAIL:", email);
+    console.log("PASSWORD LENGTH:", pw.length);
+
+
+    if(!email){
+        fb().textContent = "Please enter your email.";
+        return;
+    }
+
+
+    if(!pw){
+        fb().textContent = "Please enter your password.";
+        return;
+    }
+
+
     window.ReelWordsCloud.signUpEmail(email, pw)
+
+      .then(()=>{
+          showToast("Account created — you're signed in.");
+          closeAuthModal();
+      })
+
+      .catch(err=>{
+          console.error(err);
+          fb().textContent = err.message;
+          fb().className="quiz-feedback bad";
+      });
+
+});
       .then(()=>{ showToast("Account created — you're signed in."); closeAuthModal(); })
       .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; });
   });
