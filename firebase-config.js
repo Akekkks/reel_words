@@ -1,4 +1,8 @@
-export const firebaseConfig = {
+// firebase-config.js
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+const firebaseConfig = {
   apiKey: "AIzaSyB1jpVnYCLHfXTZsnfI2fkID9vAK2c9a-o",
   authDomain: "reel-words.firebaseapp.com",
   projectId: "reel-words",
@@ -8,4 +12,5 @@ export const firebaseConfig = {
   measurementId: "G-BTMSNGM8D4"
 };
 
-export const REEL_WORDS_FIREBASE_ENABLED = true;
+
+export const app = initializeApp(firebaseConfig);
