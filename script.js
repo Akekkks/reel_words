@@ -22,6 +22,21 @@ const STORAGE_KEY = "reelwords_state_v1";
    yet. Just a word list — all real content is fetched from the APIs. */
 const SUGGESTED_WORDS = ["eloquent", "reluctant", "thriving", "negotiate", "overwhelmed", "persistent"];
 
+/* Per-word CEFR levels (Phase 3) and the word-category catalog are loaded
+   from external JSON files instead of being hardcoded here. cefr.json in
+   this build is a small starter list, not the full ~50,000-word set the
+   spec describes — words missing from it show as "Unrated" rather than a
+   guessed level. */
+let CEFR_MAP = {};
+let CATEGORIES = [];
+async function loadStaticData(){
+  try{ CEFR_MAP = await (await fetch("cefr.json")).json(); }
+  catch(err){ console.warn("Could not load cefr.json", err); }
+  try{ CATEGORIES = await (await fetch("categories.json")).json(); }
+  catch(err){ console.warn("Could not load categories.json", err); CATEGORIES = []; }
+  if(state.tab==="dashboard") renderDashboard();
+}
+
 const CEFR_THRESHOLDS = [
   {code:"A1", title:"Beginner", max:500},
   {code:"A2", title:"Elementary", max:1000},
@@ -80,11 +95,15 @@ function loadState(){
   }
 }
 let saveTimeout = null;
+let currentUser = null; // set by initAuth() once Firebase reports a signed-in user
 function saveState(){
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(()=>{
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch(err){ console.warn("Could not save progress locally.", err); }
+    if(currentUser && window.ReelWordsCloud && window.ReelWordsCloud.enabled){
+      window.ReelWordsCloud.syncStateToCloud(currentUser.uid, state).catch(err=>console.warn("Cloud sync failed", err));
+    }
   }, 150);
 }
 
@@ -324,6 +343,94 @@ function speakFallback(word, accentLang){
   window.speechSynthesis.speak(utter);
 }
 
+/* ---------------- AUTH (Phase 9) & CLOUD PROFILE (Phase 8) ---------------- */
+const authOverlay = document.getElementById("authOverlay");
+const authCard = document.getElementById("authCard");
+function closeAuthModal(){ authOverlay.classList.remove("show"); authCard.innerHTML=""; }
+
+function initAuth(){
+  if(!window.ReelWordsCloud){
+    // firebase-sync.js hasn't finished evaluating yet in this load — retry shortly.
+    setTimeout(initAuth, 50);
+    return;
+  }
+  window.ReelWordsCloud.onAuthChange(async user=>{
+    currentUser = user;
+    updateAuthUI();
+    if(user && window.ReelWordsCloud.enabled){
+      try{
+        const cloud = await window.ReelWordsCloud.loadStateFromCloud(user.uid);
+        if(cloud){ Object.assign(state, cloud, { timer:{elapsed:0,lastXpAward:0} }); }
+        else { window.ReelWordsCloud.syncStateToCloud(user.uid, state).catch(()=>{}); }
+      }catch(err){ console.warn("Could not load cloud progress", err); }
+      renderDashboard();
+    }
+  });
+}
+
+function updateAuthUI(){
+  const area = document.getElementById("authArea");
+  if(currentUser){
+    const label = currentUser.displayName || currentUser.email || "Signed in";
+    area.innerHTML = `<button class="control-btn" id="signOutBtn">${label} · Sign Out</button>`;
+    document.getElementById("signOutBtn").addEventListener("click", async ()=>{
+      try{ await window.ReelWordsCloud.signOutUser(); showToast("Signed out — progress stays saved on this browser."); }
+      catch(err){ showToast("Couldn't sign out."); }
+    });
+  } else {
+    area.innerHTML = `<button class="control-btn" id="signInBtn">Sign In</button>`;
+    document.getElementById("signInBtn").addEventListener("click", openAuthModal);
+  }
+  if(state.tab==="dashboard") renderDashboard();
+}
+
+function openAuthModal(){
+  authOverlay.classList.add("show");
+  authCard.innerHTML = `
+    <button class="modal-close" id="authClose">✕</button>
+    <span class="modal-step-label">Sign in to sync across devices</span>
+    <button class="quiz-option auth-provider-btn" id="authGoogle">Continue with Google</button>
+    <button class="quiz-option auth-provider-btn" id="authApple">Continue with Apple</button>
+    <div class="quiz-input-row" style="margin-bottom:10px;"><input type="email" id="authEmail" placeholder="Email" autocomplete="email"></div>
+    <div class="quiz-input-row" style="margin-bottom:14px;"><input type="password" id="authPassword" placeholder="Password" autocomplete="current-password"></div>
+    <button class="quiz-option auth-provider-btn" id="authSignIn">Sign in with email</button>
+    <button class="quiz-option auth-provider-btn" id="authSignUp">Create an account</button>
+    <div class="quiz-feedback" id="authFeedback"></div>`;
+  document.getElementById("authClose").addEventListener("click", closeAuthModal);
+  const fb = ()=>document.getElementById("authFeedback");
+  document.getElementById("authGoogle").addEventListener("click", ()=> window.ReelWordsCloud.signInGoogle()
+    .then(()=>{ showToast("Signed in with Google."); closeAuthModal(); })
+    .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; }));
+  document.getElementById("authApple").addEventListener("click", ()=> window.ReelWordsCloud.signInApple()
+    .then(()=>{ showToast("Signed in with Apple."); closeAuthModal(); })
+    .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; }));
+  document.getElementById("authSignIn").addEventListener("click", ()=>{
+    const email = document.getElementById("authEmail").value.trim();
+    const pw = document.getElementById("authPassword").value;
+    window.ReelWordsCloud.signInEmail(email, pw)
+      .then(()=>{ showToast("Signed in."); closeAuthModal(); })
+      .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; });
+  });
+  document.getElementById("authSignUp").addEventListener("click", ()=>{
+    const email = document.getElementById("authEmail").value.trim();
+    const pw = document.getElementById("authPassword").value;
+    window.ReelWordsCloud.signUpEmail(email, pw)
+      .then(()=>{ showToast("Account created — you're signed in."); closeAuthModal(); })
+      .catch(err=>{ fb().textContent = err.message; fb().className="quiz-feedback bad"; });
+  });
+}
+
+function renderProfileCard(){
+  const card = document.getElementById("profileCard");
+  if(!card) return;
+  if(currentUser){
+    const label = currentUser.displayName || currentUser.email || "Signed in";
+    card.innerHTML = `<div><div class="pname">${label}</div><div class="pmeta">Learning hours, XP, and word library sync to this account.</div></div><span class="psync cloud">☁ Synced to cloud</span>`;
+  } else {
+    card.innerHTML = `<div><div class="pname">Not signed in</div><div class="pmeta">Progress is saved to this browser only.</div></div><span class="psync local">💾 Local only</span>`;
+  }
+}
+
 /* ---------------- TABS ---------------- */
 document.querySelectorAll("nav.tabs button[data-tab]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -410,6 +517,25 @@ function refreshStatusBadge(word){
   markBtn.disabled = rec.status==="learned";
 }
 
+/* ---------------- MOVIE CLIP SEARCH (Phase 4) ----------------
+   True subtitle-matched clips (word → OpenSubtitles line → exact
+   timestamp → YouTube) need an OpenSubtitles API key plus a YouTube
+   Data API key and, realistically, a backend to keep those keys off
+   the client and to cache subtitle lookups — none of which can be
+   provisioned inside a static front-end build. As a working stand-in,
+   this searches YouTube for "<word> movie scene" and offers a
+   best-effort inline embed alongside a guaranteed "open in YouTube"
+   link. Swap runMovieEmbed's iframe src for a real YouTube Data API
+   search call (with your own key) once you're ready to wire that up. */
+function renderMovieEmbed(entry){
+  const query = `${entry.word} movie scene`;
+  const searchLink = document.getElementById("youtubeSearchLink");
+  searchLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const wrap = document.getElementById("movieEmbedWrap");
+  wrap.innerHTML = `<iframe src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}" title="Movie scenes for ${entry.word}" allowfullscreen loading="lazy"></iframe>
+    <div class="movie-embed-empty">Best-effort scene search for "${entry.word}" — use "▶ Find movie clip" for full YouTube search results.</div>`;
+}
+
 function renderWordEntry(entry){
   document.getElementById("rWord").textContent = entry.word;
   document.getElementById("rPos").textContent = entry.pos || "—";
@@ -417,8 +543,10 @@ function renderWordEntry(entry){
   document.getElementById("rFreq").textContent = entry.source;
   document.getElementById("rDef").textContent = entry.definition;
   document.getElementById("rDef").classList.remove("error-msg"); document.getElementById("rDef").classList.add("definition");
+  document.getElementById("rCefr").textContent = CEFR_MAP[entry.word.toLowerCase()] || "Unrated";
 
   refreshStatusBadge(entry.word);
+  renderMovieEmbed(entry);
 
   const ukBtn = document.getElementById("playBritish");
   const usBtn = document.getElementById("playAmerican");
@@ -964,6 +1092,7 @@ function updateTimeDisplaysOnly(){
 
 /* ---------------- DASHBOARD ---------------- */
 function renderDashboard(){
+  renderProfileCard();
   const cefr = cefrInfo();
   document.getElementById("dLevel").textContent = Math.floor(state.xp/XP_PER_LEVEL) + 1;
   document.getElementById("streakDays").textContent = state.streak;
@@ -1015,11 +1144,19 @@ function renderDashboard(){
 
   const catGrid=document.getElementById("catGrid"); catGrid.innerHTML="";
   const newCount = wordsByStatus("new").length, learningCount = wordsByStatus("learning").length, learnedCount = wordsByStatus("learned").length;
+  const totalTracked = Math.max(1, newCount+learningCount+learnedCount);
   [["New words", newCount], ["Learning", learningCount], ["Learned", learnedCount]].forEach(([name,count])=>{
-    const total = Math.max(1, newCount+learningCount+learnedCount);
-    const pctC = Math.round(100*count/total);
+    const pctC = Math.round(100*count/totalTracked);
     const div=document.createElement("div"); div.className="cat-card";
     div.innerHTML = `<div class="cname">${name}</div><div class="cnum">${count} word${count===1?"":"s"} · ${pctC}%</div><div class="bar"><div style="width:${pctC}%"></div></div>`;
+    catGrid.appendChild(div);
+  });
+  // Word-category catalog (categories.json) — shown as a reference collection.
+  // Individual words aren't tagged by category yet, so this intentionally shows
+  // the collection size rather than a fabricated per-category completion %.
+  CATEGORIES.forEach(c=>{
+    const div=document.createElement("div"); div.className="cat-card";
+    div.innerHTML = `<div class="cname">${c.name}</div><div class="cnum">${c.total} words in this collection</div>`;
     catGrid.appendChild(div);
   });
 
@@ -1033,3 +1170,5 @@ function renderDashboard(){
 }
 
 renderDashboard();
+loadStaticData();
+initAuth();
