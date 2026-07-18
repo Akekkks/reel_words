@@ -12,7 +12,7 @@
    saveState()/loadState() below for the single place that
    would need to change.
    ============================================================ */
-
+console.log("SCRIPT.JS STARTED");
 const API_BASE = "https://api.dictionaryapi.dev/api/v2/entries/en/";
 const DATAMUSE_BASE = "https://api.datamuse.com/words";
 const STORAGE_KEY = "reelwords_state_v1";
