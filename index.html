@@ -21,6 +21,7 @@
       <button data-tab="library">Library</button>
       <button data-tab="dashboard">Dashboard</button>
     </nav>
+    <div id="authArea"><button class="control-btn" id="signInBtn">Sign In</button></div>
   </div>
 </header>
 
@@ -50,6 +51,7 @@
             <span class="pos-line"><span id="rPos"></span> · <span class="ipa" id="rIpa"></span></span>
           </div>
           <div class="badges">
+            <span class="badge cefr" id="rCefr">—</span>
             <span class="badge status" id="rStatus">NOT LEARNED</span>
             <span class="badge freq" id="rFreq"></span>
           </div>
@@ -64,11 +66,12 @@
       </div>
 
       <div class="card scene-card film-frame hoverable">
-        <div class="scene-video">
+        <div class="scene-video" id="sceneVideoWrap">
           <span class="scene-meta" id="rSpeaker"></span>
           <span class="scene-meta time" id="rTime"></span>
           <div class="subtitle-bar" id="rSubtitle"></div>
         </div>
+        <div id="movieEmbedWrap" class="movie-embed-wrap"></div>
         <div class="scene-controls">
           <div class="speed-group">
             <button class="speed-btn">0.5×</button><button class="speed-btn">0.75×</button><button class="speed-btn active">1×</button>
@@ -76,7 +79,7 @@
           <div>
             <button class="control-btn">↻ Repeat sentence</button>
             <button class="control-btn" id="loopBtn">⟲ Loop clip</button>
-            <button class="control-btn">⛶ Fullscreen</button>
+            <a class="control-btn" id="youtubeSearchLink" href="#" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">▶ Find movie clip</a>
           </div>
         </div>
       </div>
@@ -137,6 +140,8 @@
   <section id="dashboard">
     <span class="eyebrow">Your Progress</span>
     <h1 style="margin-bottom:22px;">Learning dashboard</h1>
+
+    <div class="card profile-card" id="profileCard" style="padding:20px 24px; margin-bottom:22px;"></div>
 
     <div class="rank-card">
       <div>
@@ -206,7 +211,7 @@
     </div>
     <!-- ============ END TIME TRACKER ============ -->
 
-    <div class="section-title"><h3>Category progress</h3></div>
+    <div class="section-title"><h3>Word status &amp; category catalog</h3></div>
     <div class="cat-grid" id="catGrid"></div>
 
     <div class="section-title"><h3>Achievements</h3></div>
@@ -227,8 +232,14 @@
   <div class="card modal-card" id="flowCard"></div>
 </div>
 
-<footer>Reel Words — word definitions, phonetics and pronunciation audio are fetched from the Free Dictionary API (dictionaryapi.dev) with a Datamuse fallback when a word isn't found; pronunciation falls back to your browser's built-in speech synthesis when no audio clip is available. Your XP, CEFR level, and word library are saved to this browser's local storage so they persist between visits.</footer>
+<div class="modal-overlay" id="authOverlay">
+  <div class="card modal-card" id="authCard"></div>
+</div>
 
-<script src="script.js"></script>
+<footer>Reel Words — word definitions, phonetics and pronunciation audio are fetched from the Free Dictionary API (dictionaryapi.dev) with a Datamuse fallback when a word isn't found; pronunciation falls back to your browser's built-in speech synthesis when no audio clip is available. CEFR levels come from the bundled cefr.json word list. Movie moments are found via a YouTube search link (no OpenSubtitles/YouTube API key is configured in this build — see script.js comments). Your XP, CEFR level, and word library are saved to this browser's local storage, and will also sync to the cloud once Firebase is signed in.</footer>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="firebase-sync.js"></script>
+<script src="script.js" defer></script>
 </body>
 </html>
