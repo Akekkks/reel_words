@@ -1206,6 +1206,6 @@ function renderDashboard(){
 
 renderDashboard();
 loadStaticData();
-window.addEventListener("load", ()=>{
+window.addEventListener("DOMContentLoaded", ()=>{
     initAuth();
 });
