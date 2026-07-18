@@ -424,11 +424,17 @@ const pw = passwordInput.value;
     console.log("PASSWORD LENGTH:", pw.length);
 
 
-    if(!email){
-        fb().textContent = "Please enter your email.";
-        return;
-    }
+   if(!email){
+    fb().textContent = "Please enter your email.";
+    return;
+}
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if(!emailRegex.test(email)){
+    fb().textContent = "Please enter a valid email address.";
+    return;
+}
 
     if(!pw){
         fb().textContent = "Please enter your password.";
