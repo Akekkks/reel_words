@@ -417,7 +417,7 @@ function openAuthModal(){
     const passwordInput = document.getElementById("authPassword");
 
     const email = emailInput.value.trim();
-    const pw = passwordInput.value.trim();
+const pw = passwordInput.value;
 
 
     console.log("EMAIL:", email);
