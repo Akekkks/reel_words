@@ -241,6 +241,45 @@ h1,h2,h3{ font-family:var(--display); letter-spacing:.5px; margin:0; font-weight
   box-shadow:var(--shadow-lg); z-index:200; transition:all .35s cubic-bezier(.2,.8,.2,1); }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* ---------- word status badges & new word-card actions ---------- */
+.badge.status{ background:var(--blue-light); color:var(--blue); }
+.badge.status.learning{ background:var(--yellow); color:#3a3300; }
+.badge.status.learned{ background:#d7f3ea; color:#0d7a55; }
+.sound-btn.learn-btn{ background:var(--yellow-warm); color:#3a2900; font-weight:700; }
+.sound-btn.learn-btn:disabled{ background:#d7f3ea; color:#0d7a55; opacity:1; }
+.sound-btn.start-learning-btn{ background:linear-gradient(135deg,var(--blue-2),var(--blue)); color:#fff; font-weight:700; }
+
+/* ---------- grammar practice ---------- */
+.gram-word-title{ font-family:var(--display); font-size:36px; color:var(--blue); margin-bottom:4px; }
+.gram-pos-pills{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.gram-pos-pill{ font-family:var(--mono); font-size:12px; padding:5px 12px; border-radius:999px; background:var(--blue-light); color:var(--blue); font-weight:700; text-transform:uppercase; }
+.forms-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:26px; }
+@media (max-width:720px){ .forms-grid{ grid-template-columns:1fr; } }
+.form-card{ background:var(--white); box-shadow:var(--shadow); border-radius:var(--radius); padding:16px 18px; }
+.form-card .fname{ font-family:var(--mono); font-size:11px; color:var(--blue-2); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
+.form-card ul{ margin:0; padding-left:18px; font-size:15px; }
+.form-card li{ margin-bottom:4px; }
+.gram-exercise{ padding:22px; margin-bottom:16px; }
+.gram-exercise .sentence{ font-size:17px; margin-bottom:14px; }
+.gram-exercise .sentence mark{ background:var(--yellow); color:#171100; padding:1px 7px; border-radius:5px; }
+
+/* ---------- word library ---------- */
+.lib-word-card{ background:var(--white); box-shadow:var(--shadow); border-radius:var(--radius); padding:16px 18px; }
+.lib-word-card .lname{ font-family:var(--display); font-size:22px; color:var(--blue); }
+.lib-word-card .ldef{ font-size:13.5px; color:var(--gray); margin:6px 0 10px; }
+.lib-word-card .lmeta{ font-family:var(--mono); font-size:11px; color:var(--gray); margin-bottom:10px; }
+.lib-word-card .lprogress{ background:var(--blue-light); height:6px; border-radius:999px; overflow:hidden; margin-bottom:12px; }
+.lib-word-card .lprogress div{ height:100%; background:var(--blue-2); }
+.lib-word-card .lactions{ display:flex; gap:8px; flex-wrap:wrap; }
+.lib-empty{ font-family:var(--mono); color:var(--gray); font-size:14px; grid-column:1 / -1; }
+
+/* ---------- learning flow modal ---------- */
+.modal-overlay{ position:fixed; inset:0; background:rgba(7,10,25,0.55); display:none; align-items:center; justify-content:center; z-index:150; padding:20px; }
+.modal-overlay.show{ display:flex; animation:fadeIn .25s ease; }
+.modal-card{ width:100%; max-width:560px; padding:30px; max-height:85vh; overflow-y:auto; }
+.modal-step-label{ font-family:var(--mono); font-size:12px; color:var(--blue-2); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; display:block; }
+.modal-close{ float:right; background:var(--blue-light); border:none; color:var(--blue); width:30px; height:30px; border-radius:8px; font-size:14px; }
+
 footer{ text-align:center; padding:30px; color:var(--gray); font-family:var(--mono); font-size:11.5px; }
 
 @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
